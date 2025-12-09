@@ -69,25 +69,30 @@ install_tools() {
 
     if [[ "$OS" == "macos" ]]; then
         # macOS - use Homebrew
-        if command -v brew &> /dev/null; then
-            echo "  Homebrew found."
+        if ! command -v brew &> /dev/null; then
+            echo "  Homebrew not found. Installing..."
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-            if ! command -v fzf &> /dev/null; then
-                echo "  Installing fzf..."
-                brew install fzf
-            else
-                echo "  ✓ fzf already installed"
+            # Add Homebrew to PATH for this session (Apple Silicon)
+            if [[ -f "/opt/homebrew/bin/brew" ]]; then
+                eval "$(/opt/homebrew/bin/brew shellenv)"
             fi
+        fi
 
-            if ! command -v tmux &> /dev/null; then
-                echo "  Installing tmux..."
-                brew install tmux
-            else
-                echo "  ✓ tmux already installed"
-            fi
+        echo "  Homebrew found."
+
+        if ! command -v fzf &> /dev/null; then
+            echo "  Installing fzf..."
+            brew install fzf
         else
-            echo "  Homebrew not found. Install it first:"
-            echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+            echo "  ✓ fzf already installed"
+        fi
+
+        if ! command -v tmux &> /dev/null; then
+            echo "  Installing tmux..."
+            brew install tmux
+        else
+            echo "  ✓ tmux already installed"
         fi
 
     elif [[ "$OS" == "windows" ]]; then
