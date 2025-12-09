@@ -1,0 +1,24 @@
+# Secrets (unencrypted)
+secrets/*.env
+secrets/*.json
+secrets/*.pem
+secrets/*.key
+!secrets/*.example
+!secrets/.gitkeep
+
+# SSH keys
+*.ppk
+id_rsa*
+id_ed25519*
+
+# Local overrides
+*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~

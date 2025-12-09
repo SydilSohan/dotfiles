@@ -1,0 +1,120 @@
+[user]
+	email = mdsohan383@gmail.com
+	name = sohan
+
+[core]
+	editor = cursor --wait
+	autocrlf = true
+	longpaths = true
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[alias]
+	# Status and info
+	s = status -sb
+	st = status
+
+	# Branches
+	br = branch
+	bra = branch -a
+	brd = branch -d
+	brD = branch -D
+	co = checkout
+	cob = checkout -b
+
+	# Commits
+	ci = commit
+	cm = commit -m
+	ca = commit --amend
+	can = commit --amend --no-edit
+
+	# Add
+	a = add
+	aa = add --all
+	ap = add -p
+
+	# Diff
+	d = diff
+	ds = diff --staged
+	dc = diff --cached
+
+	# Log
+	l = log --oneline -20
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	ll = log --pretty=format:'%C(yellow)%h%Cred%d %Creset%s%Cblue [%cn]' --decorate --numstat
+	lf = log --follow -p
+	today = log --since=midnight --author='sohan' --oneline
+
+	# Push/Pull
+	p = push
+	pf = push --force-with-lease
+	pl = pull
+
+	# Stash
+	ss = stash
+	sp = stash pop
+	sl = stash list
+
+	# Reset
+	unstage = reset HEAD --
+	undo = reset --soft HEAD~1
+	hard = reset --hard HEAD
+
+	# Remote
+	rv = remote -v
+
+	# Utility
+	aliases = config --get-regexp alias
+	last = log -1 HEAD --stat
+	contributors = shortlog -sn --no-merges
+
+	# Cleanup merged branches
+	cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master' | xargs -n 1 git branch -d"
+
+	# Find commits by message
+	find = log --all --grep
+
+	# Show files in commit
+	files = diff-tree --no-commit-id --name-only -r
+
+	# Quick sync with main
+	sync = "!git checkout main && git pull && git checkout -"
+
+[color]
+	ui = auto
+
+[color "branch"]
+	current = yellow reverse
+	local = yellow
+	remote = green
+
+[color "diff"]
+	meta = yellow bold
+	frag = magenta bold
+	old = red
+	new = green
+
+[color "status"]
+	added = green
+	changed = yellow
+	untracked = red
+
+[merge]
+	conflictstyle = diff3
+
+[diff]
+	colorMoved = zebra
+
+[fetch]
+	prune = true
+
+[rerere]
+	enabled = true

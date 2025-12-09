@@ -1,0 +1,60 @@
+#!/bin/bash
+# =============================================================================
+# tmux-sessionizer - Quick project switching with tmux
+# =============================================================================
+# Usage: tmux-sessionizer [path]
+# If no path given, uses fzf to select from projects
+#
+# NOTE: This script requires tmux and fzf. Works best in WSL.
+# For native Git Bash without tmux, use the 'fp' function in .bashrc instead.
+# =============================================================================
+
+# Check if tmux is available
+if ! command -v tmux &> /dev/null; then
+    echo "tmux not found. Using simple directory switcher instead."
+
+    # Fallback: just cd to the project
+    if [[ $# -eq 1 ]]; then
+        cd "$1"
+    else
+        selected=$(find ~/projects ~/work -maxdepth 2 -type d -name ".git" 2>/dev/null |
+                   sed 's/\/.git$//' |
+                   fzf --height 40% --reverse)
+        if [[ -n "$selected" ]]; then
+            cd "$selected"
+            echo "Changed to: $selected"
+        fi
+    fi
+    exit 0
+fi
+
+# Get the target directory
+if [[ $# -eq 1 ]]; then
+    selected=$1
+else
+    selected=$(find ~/projects ~/work -mindepth 1 -maxdepth 2 -type d 2>/dev/null | fzf)
+fi
+
+if [[ -z $selected ]]; then
+    exit 0
+fi
+
+# Create session name from directory
+selected_name=$(basename "$selected" | tr . _)
+
+# Check if tmux is running
+tmux_running=$(pgrep tmux)
+
+# If not in tmux and tmux not running, start new session
+if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
+    tmux new-session -s $selected_name -c $selected
+    exit 0
+fi
+
+# Create session if it doesn't exist
+if ! tmux has-session -t=$selected_name 2> /dev/null; then
+    tmux new-session -ds $selected_name -c $selected
+fi
+
+# Switch to the session
+tmux switch-client -t $selected_name
