@@ -91,19 +91,21 @@ install_tools() {
         fi
 
     elif [[ "$OS" == "windows" ]]; then
-        # Windows - use Chocolatey
-        if command -v choco &> /dev/null; then
-            echo "  Chocolatey found."
+        # Windows - download fzf directly (no admin needed)
+        if ! command -v fzf &> /dev/null; then
+            echo "  Installing fzf..."
+            local FZF_VERSION="0.59.0"
+            local FZF_URL="https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-windows_amd64.zip"
 
-            if ! command -v fzf &> /dev/null; then
-                echo "  Installing fzf..."
-                choco install fzf -y 2>/dev/null || echo "  (Run as admin to install fzf)"
+            if curl -fsSL "$FZF_URL" -o /tmp/fzf.zip; then
+                unzip -o /tmp/fzf.zip -d "$DOTFILES_DIR/scripts/" && rm /tmp/fzf.zip
+                echo "  ✓ fzf installed to dotfiles/scripts/"
             else
-                echo "  ✓ fzf already installed"
+                echo "  ✗ Failed to download fzf"
+                echo "    Manual install: choco install fzf (as admin)"
             fi
         else
-            echo "  Chocolatey not found. Install in admin PowerShell:"
-            echo "  Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+            echo "  ✓ fzf already installed"
         fi
     fi
 }

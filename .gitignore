@@ -1,6 +1,10 @@
 # Vault password (NEVER commit this!)
 .vault_password
 
+# Downloaded binaries (installed by setup.sh)
+scripts/fzf.exe
+scripts/fzf
+
 # SSH keys
 *.ppk
 id_rsa*
