@@ -95,6 +95,13 @@ install_tools() {
             echo "  ✓ tmux already installed"
         fi
 
+        if ! command -v direnv &> /dev/null; then
+            echo "  Installing direnv..."
+            brew install direnv
+        else
+            echo "  ✓ direnv already installed"
+        fi
+
     elif [[ "$OS" == "windows" ]]; then
         # Windows - download fzf directly (no admin needed)
         if ! command -v fzf &> /dev/null; then
@@ -111,6 +118,21 @@ install_tools() {
             fi
         else
             echo "  ✓ fzf already installed"
+        fi
+
+        # Windows - download direnv directly
+        if ! command -v direnv &> /dev/null; then
+            echo "  Installing direnv..."
+            local DIRENV_VERSION="2.35.0"
+            local DIRENV_URL="https://github.com/direnv/direnv/releases/download/v${DIRENV_VERSION}/direnv.windows-amd64.exe"
+
+            if curl -fsSL "$DIRENV_URL" -o "$DOTFILES_DIR/scripts/direnv.exe"; then
+                echo "  ✓ direnv installed to dotfiles/scripts/"
+            else
+                echo "  ✗ Failed to download direnv"
+            fi
+        else
+            echo "  ✓ direnv already installed"
         fi
     fi
 }

@@ -4,6 +4,8 @@
 # Downloaded binaries (installed by setup.sh)
 scripts/fzf.exe
 scripts/fzf
+scripts/direnv.exe
+scripts/direnv
 
 # SSH keys
 *.ppk

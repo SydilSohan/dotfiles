@@ -218,6 +218,13 @@ autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 
 # -----------------------------------------------------------------------------
+# direnv - auto-load project .envrc files
+# -----------------------------------------------------------------------------
+if command -v direnv &> /dev/null; then
+    eval "$(direnv hook zsh)"
+fi
+
+# -----------------------------------------------------------------------------
 # Load local overrides if exists
 # -----------------------------------------------------------------------------
 if [ -f ~/.zshrc.local ]; then
