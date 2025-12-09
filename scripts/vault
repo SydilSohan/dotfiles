@@ -1,0 +1,162 @@
+#!/bin/bash
+# =============================================================================
+# vault - Simple secrets encryption (ansible-vault alternative for Windows)
+# =============================================================================
+# Uses OpenSSL AES-256-CBC encryption with PBKDF2
+#
+# Usage:
+#   vault encrypt <file>        # Encrypt file in place
+#   vault decrypt <file>        # Decrypt file in place
+#   vault view <file>           # View decrypted contents
+#   vault edit <file>           # Decrypt, edit, re-encrypt
+# =============================================================================
+
+set -e
+
+VAULT_PASSWORD_FILE="$HOME/.vault_password"
+
+# Get password
+get_password() {
+    if [[ -f "$VAULT_PASSWORD_FILE" ]]; then
+        cat "$VAULT_PASSWORD_FILE"
+    else
+        read -s -p "Vault password: " password
+        echo >&2
+        echo "$password"
+    fi
+}
+
+# Check if file is encrypted
+is_encrypted() {
+    head -1 "$1" 2>/dev/null | grep -q "^VAULT_ENCRYPTED" && return 0 || return 1
+}
+
+# Encrypt a file
+do_encrypt() {
+    local file="$1"
+
+    if is_encrypted "$file"; then
+        echo "File is already encrypted: $file"
+        exit 1
+    fi
+
+    local password=$(get_password)
+    local encrypted=$(openssl enc -aes-256-cbc -pbkdf2 -salt -base64 -pass pass:"$password" < "$file")
+
+    echo "VAULT_ENCRYPTED;AES256" > "$file"
+    echo "$encrypted" >> "$file"
+
+    echo "Encrypted: $file"
+}
+
+# Decrypt a file
+do_decrypt() {
+    local file="$1"
+
+    if ! is_encrypted "$file"; then
+        echo "File is not encrypted: $file"
+        exit 1
+    fi
+
+    local password=$(get_password)
+    local content=$(tail -n +2 "$file" | openssl enc -aes-256-cbc -pbkdf2 -d -base64 -pass pass:"$password")
+
+    echo "$content" > "$file"
+
+    echo "Decrypted: $file"
+}
+
+# View encrypted file
+do_view() {
+    local file="$1"
+
+    if ! is_encrypted "$file"; then
+        cat "$file"
+        return
+    fi
+
+    local password=$(get_password)
+    tail -n +2 "$file" | openssl enc -aes-256-cbc -pbkdf2 -d -base64 -pass pass:"$password"
+}
+
+# Edit encrypted file
+do_edit() {
+    local file="$1"
+    local was_encrypted=false
+    local temp_file=$(mktemp)
+
+    if is_encrypted "$file"; then
+        was_encrypted=true
+        local password=$(get_password)
+        tail -n +2 "$file" | openssl enc -aes-256-cbc -pbkdf2 -d -base64 -pass pass:"$password" > "$temp_file"
+    else
+        cp "$file" "$temp_file"
+    fi
+
+    # Open in editor
+    ${EDITOR:-cursor} "$temp_file"
+
+    # Re-encrypt if it was encrypted
+    if [[ "$was_encrypted" == true ]]; then
+        local encrypted=$(openssl enc -aes-256-cbc -pbkdf2 -salt -base64 -pass pass:"$password" < "$temp_file")
+        echo "VAULT_ENCRYPTED;AES256" > "$file"
+        echo "$encrypted" >> "$file"
+        echo "Re-encrypted: $file"
+    else
+        cp "$temp_file" "$file"
+    fi
+
+    rm -f "$temp_file"
+}
+
+# Set vault password
+do_set_password() {
+    read -s -p "Enter new vault password: " password1
+    echo
+    read -s -p "Confirm vault password: " password2
+    echo
+
+    if [[ "$password1" != "$password2" ]]; then
+        echo "Passwords don't match!"
+        exit 1
+    fi
+
+    echo "$password1" > "$VAULT_PASSWORD_FILE"
+    chmod 600 "$VAULT_PASSWORD_FILE"
+    echo "Password saved to $VAULT_PASSWORD_FILE"
+}
+
+# Main
+case "$1" in
+    encrypt)
+        [[ -z "$2" ]] && { echo "Usage: vault encrypt <file>"; exit 1; }
+        do_encrypt "$2"
+        ;;
+    decrypt)
+        [[ -z "$2" ]] && { echo "Usage: vault decrypt <file>"; exit 1; }
+        do_decrypt "$2"
+        ;;
+    view)
+        [[ -z "$2" ]] && { echo "Usage: vault view <file>"; exit 1; }
+        do_view "$2"
+        ;;
+    edit)
+        [[ -z "$2" ]] && { echo "Usage: vault edit <file>"; exit 1; }
+        do_edit "$2"
+        ;;
+    set-password)
+        do_set_password
+        ;;
+    *)
+        echo "vault - Simple secrets encryption"
+        echo ""
+        echo "Usage:"
+        echo "  vault encrypt <file>     Encrypt a file"
+        echo "  vault decrypt <file>     Decrypt a file"
+        echo "  vault view <file>        View decrypted contents"
+        echo "  vault edit <file>        Edit encrypted file"
+        echo "  vault set-password       Set/change vault password"
+        echo ""
+        echo "Password: stored in ~/.vault_password or prompted"
+        ;;
+esac

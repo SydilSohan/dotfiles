@@ -1,10 +1,5 @@
-# Secrets (unencrypted)
-secrets/*.env
-secrets/*.json
-secrets/*.pem
-secrets/*.key
-!secrets/*.example
-!secrets/.gitkeep
+# Vault password (NEVER commit this!)
+.vault_password
 
 # SSH keys
 *.ppk
@@ -22,3 +17,6 @@ Thumbs.db
 *.bak
 *.backup
 *~
+
+# Note: Encrypted secrets (VAULT_ENCRYPTED) ARE safe to commit
+# Only unencrypted secrets should never be committed

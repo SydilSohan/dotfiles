@@ -1,36 +1,70 @@
 # Dotfiles
 
-My dev environment configuration for Windows (Git Bash).
+My dev environment configuration (Windows + macOS).
 
 ## Quick Start
 
 ```bash
 # Clone to home directory
-git clone https://github.com/YOUR_USERNAME/dotfiles.git ~/dotfiles
+git clone https://github.com/SydilSohan/dotfiles.git ~/dotfiles
 
-# Run setup
-cd ~/dotfiles
-./setup.sh
+# Run setup (auto-detects OS)
+cd ~/dotfiles && ./setup.sh
 
 # Reload shell
-source ~/.bashrc
+source ~/.bashrc  # Windows/Linux
+source ~/.zshrc   # macOS
 ```
 
 ## What's Included
 
 | File | Purpose |
 |------|---------|
-| `.bashrc` | Shell aliases, functions, prompt |
+| `.bashrc` | Shell config (Windows/Linux) |
+| `.zshrc` | Shell config (macOS) |
 | `.gitconfig` | Git aliases and settings |
-| `scripts/` | Utility scripts (tmux-sessionizer) |
-| `secrets/` | Encrypted API keys (ansible-vault) |
+| `scripts/vault` | Encrypt/decrypt secrets |
+| `scripts/secrets-restore` | Symlink secrets to projects |
+| `secrets/` | Encrypted project secrets |
 
-## Key Features
+## Secrets Management
 
-### Aliases
+Secrets are encrypted with AES-256 and safe to commit.
 
 ```bash
-# Git shortcuts
+# First time: set your vault password
+vault set-password
+
+# Encrypt a secret
+vault encrypt secrets/pie-go/service-account.json
+
+# View encrypted file (without decrypting)
+vault view secrets/pie-go/service-account.json
+
+# Decrypt when needed
+vault decrypt secrets/pie-go/service-account.json
+
+# Edit encrypted file (decrypts, opens editor, re-encrypts)
+vault edit secrets/pie-frontend/.env
+```
+
+### Restore Secrets to Projects
+
+After cloning on a new machine:
+
+```bash
+# Decrypt and symlink all secrets to project directories
+secrets-restore
+```
+
+This links:
+- `secrets/pie-go/service-account.json` → `~/projects/pie-go/service-account.json`
+- `secrets/pie-frontend/.env` → `~/projects/pie-frontend/.env`
+
+## Key Aliases
+
+```bash
+# Git
 gs          # git status
 gaa         # git add --all
 gcm "msg"   # git commit -m "msg"
@@ -39,46 +73,25 @@ gl          # git log --oneline
 
 # Navigation
 proj        # cd ~/projects
-..          # cd ..
+fp          # fuzzy find project (requires fzf)
 
 # Development
 nr dev      # npm run dev
-nrb         # npm run build
-```
-
-### Functions
-
-```bash
-# Project switcher (requires fzf)
-fp          # fuzzy find project and cd
-fpc         # fuzzy find and open in Cursor
-
-# Quick commit
-gacp "msg"  # git add all, commit, push
-
-# Utilities
-mkcd dir    # mkdir + cd
+gacp "msg"  # git add, commit, push in one command
 killport 3000  # kill process on port
-cht go/arrays  # cheat sheet lookup
-```
-
-## Secrets Management
-
-```bash
-# Encrypt your API keys
-ansible-vault encrypt secrets/api_keys.env
-
-# View encrypted file
-ansible-vault view secrets/api_keys.env
-
-# Decrypt when needed
-ansible-vault decrypt secrets/api_keys.env
+cht go/arrays  # quick cheat sheet
 ```
 
 ## Required Tools
 
-Install via Chocolatey:
+**Windows (Chocolatey):**
 ```powershell
 choco install git nodejs-lts golang fzf
+npm install -g typescript
+```
+
+**macOS (Homebrew):**
+```bash
+brew install node go fzf tmux
 npm install -g typescript
 ```
