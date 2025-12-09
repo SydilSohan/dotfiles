@@ -116,66 +116,78 @@ install_tools() {
 }
 
 # -----------------------------------------------------------------------------
-# Check dev tools
+# Install dev tools
 # -----------------------------------------------------------------------------
-check_dev_tools() {
+install_dev_tools() {
     echo ""
-    echo "[3/4] Checking dev tools..."
+    echo "[3/4] Installing dev tools..."
 
-    # Node
+    if [[ "$OS" == "macos" ]]; then
+        # Node.js
+        if ! command -v node &> /dev/null; then
+            echo "  Installing Node.js..."
+            brew install node
+        else
+            echo "  ✓ Node.js $(node --version)"
+        fi
+
+        # Go
+        if ! command -v go &> /dev/null; then
+            echo "  Installing Go..."
+            brew install go
+        else
+            echo "  ✓ $(go version)"
+        fi
+
+    elif [[ "$OS" == "windows" ]]; then
+        # On Windows, check and give instructions (needs admin for choco)
+        if command -v node &> /dev/null; then
+            echo "  ✓ Node.js $(node --version)"
+        else
+            echo "  ✗ Node.js not found"
+            echo "    Install (admin PowerShell): choco install nodejs-lts -y"
+        fi
+
+        if command -v go &> /dev/null; then
+            echo "  ✓ $(go version)"
+        else
+            echo "  ✗ Go not found"
+            echo "    Install (admin PowerShell): choco install golang -y"
+        fi
+    fi
+
+    # TypeScript (cross-platform via npm)
     if command -v node &> /dev/null; then
-        echo "  ✓ Node.js $(node --version)"
-    else
-        echo "  ✗ Node.js not found"
-        if [[ "$OS" == "macos" ]]; then
-            echo "    Install: brew install node"
+        if ! command -v tsc &> /dev/null; then
+            echo "  Installing TypeScript..."
+            npm install -g typescript
         else
-            echo "    Install: choco install nodejs-lts"
+            echo "  ✓ TypeScript $(tsc --version)"
         fi
     fi
 
-    # TypeScript
-    if command -v tsc &> /dev/null; then
-        echo "  ✓ TypeScript $(tsc --version)"
-    else
-        echo "  ✗ TypeScript not found"
-        echo "    Install: npm install -g typescript"
-    fi
-
-    # Go
-    if command -v go &> /dev/null; then
-        echo "  ✓ $(go version)"
-    else
-        echo "  ✗ Go not found"
-        if [[ "$OS" == "macos" ]]; then
-            echo "    Install: brew install go"
+    # Claude Code (cross-platform via npm)
+    if command -v node &> /dev/null; then
+        if ! command -v claude &> /dev/null; then
+            echo "  Installing Claude Code..."
+            npm install -g @anthropic-ai/claude-code
         else
-            echo "    Install: choco install golang"
+            echo "  ✓ Claude Code installed"
         fi
     fi
 
-    # Git
+    # Git check
     if command -v git &> /dev/null; then
         echo "  ✓ Git $(git --version | cut -d' ' -f3)"
     else
-        echo "  ✗ Git not found"
+        echo "  ✗ Git not found - please install manually"
     fi
 
-    # Docker
+    # Docker check (optional)
     if command -v docker &> /dev/null; then
         echo "  ✓ Docker found"
     else
         echo "  ✗ Docker not found (optional)"
-    fi
-
-    # tmux (macOS only typically)
-    if [[ "$OS" == "macos" ]]; then
-        if command -v tmux &> /dev/null; then
-            echo "  ✓ tmux $(tmux -V)"
-        else
-            echo "  ✗ tmux not found"
-            echo "    Install: brew install tmux"
-        fi
     fi
 }
 
@@ -196,7 +208,7 @@ setup_scripts() {
 main() {
     create_symlinks
     install_tools
-    check_dev_tools
+    install_dev_tools
     setup_scripts
 
     echo ""
