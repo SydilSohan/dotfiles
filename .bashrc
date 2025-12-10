@@ -210,4 +210,3 @@ if [ -f ~/.bashrc.local ]; then
     source ~/.bashrc.local
 fi
 
-echo "Dotfiles loaded! Use 'fp' to switch projects, 'cht <topic>' for quick reference."
