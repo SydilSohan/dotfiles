@@ -1,8 +1,8 @@
 #!/bin/bash
 # =============================================================================
-# Dotfiles Bootstrap Script (Cross-Platform: macOS + Windows/Git Bash)
+# Dotfiles Bootstrap Script (Cross-Platform: macOS + Windows)
 # =============================================================================
-# Run this on a new machine to set up your dev environment
+# Idempotent: Safe to run multiple times, always produces same result
 # Usage: ./setup.sh
 # =============================================================================
 
@@ -26,9 +26,6 @@ echo "  Detected OS: $OS"
 echo "=================================================="
 echo ""
 
-# -----------------------------------------------------------------------------
-# Backup existing files
-# -----------------------------------------------------------------------------
 backup_if_exists() {
     if [ -f "$1" ] || [ -L "$1" ]; then
         mkdir -p "$BACKUP_DIR"
@@ -37,201 +34,188 @@ backup_if_exists() {
     fi
 }
 
-# -----------------------------------------------------------------------------
-# Create symlinks
-# -----------------------------------------------------------------------------
 create_symlinks() {
-    echo ""
-    echo "[1/4] Creating symlinks..."
-
+    echo "[1/5] Creating symlinks..."
     backup_if_exists "$HOME/.gitconfig"
     ln -sf "$DOTFILES_DIR/.gitconfig" "$HOME/.gitconfig"
 
     if [[ "$OS" == "macos" ]]; then
-        # macOS uses zsh by default
         backup_if_exists "$HOME/.zshrc"
         ln -sf "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
         echo "  ✓ Linked .zshrc and .gitconfig"
     else
-        # Windows Git Bash / Linux uses bash
         backup_if_exists "$HOME/.bashrc"
         ln -sf "$DOTFILES_DIR/.bashrc" "$HOME/.bashrc"
         echo "  ✓ Linked .bashrc and .gitconfig"
     fi
 }
 
-# -----------------------------------------------------------------------------
-# Install tools
-# -----------------------------------------------------------------------------
-install_tools() {
+install_host_tools() {
     echo ""
-    echo "[2/4] Installing tools..."
+    echo "[2/5] Installing host tools..."
 
     if [[ "$OS" == "macos" ]]; then
-        # macOS - use Homebrew
         if ! command -v brew &> /dev/null; then
-            echo "  Homebrew not found. Installing..."
+            echo "  Installing Homebrew..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-            # Add Homebrew to PATH for this session (Apple Silicon)
-            if [[ -f "/opt/homebrew/bin/brew" ]]; then
-                eval "$(/opt/homebrew/bin/brew shellenv)"
-            fi
+            [[ -f "/opt/homebrew/bin/brew" ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
         fi
+        echo "  ✓ Homebrew"
 
-        echo "  Homebrew found."
+        command -v fzf &> /dev/null || brew install fzf
+        command -v tmux &> /dev/null || brew install tmux
+        command -v direnv &> /dev/null || brew install direnv
+        command -v node &> /dev/null || brew install node
+        command -v go &> /dev/null || brew install go
+        command -v gh &> /dev/null || brew install gh
+        echo "  ✓ fzf, tmux, direnv, node, go, gh"
 
-        if ! command -v fzf &> /dev/null; then
-            echo "  Installing fzf..."
-            brew install fzf
-        else
-            echo "  ✓ fzf already installed"
-        fi
-
-        if ! command -v tmux &> /dev/null; then
-            echo "  Installing tmux..."
-            brew install tmux
-        else
-            echo "  ✓ tmux already installed"
-        fi
-
-        if ! command -v direnv &> /dev/null; then
-            echo "  Installing direnv..."
-            brew install direnv
-        else
-            echo "  ✓ direnv already installed"
-        fi
-
-    elif [[ "$OS" == "windows" ]]; then
-        # Windows - download fzf directly (no admin needed)
-        if ! command -v fzf &> /dev/null; then
-            echo "  Installing fzf..."
-            local FZF_VERSION="0.59.0"
-            local FZF_URL="https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-windows_amd64.zip"
-
-            if curl -fsSL "$FZF_URL" -o /tmp/fzf.zip; then
-                unzip -o /tmp/fzf.zip -d "$DOTFILES_DIR/scripts/" && rm /tmp/fzf.zip
-                echo "  ✓ fzf installed to dotfiles/scripts/"
-            else
-                echo "  ✗ Failed to download fzf"
-                echo "    Manual install: choco install fzf (as admin)"
-            fi
-        else
-            echo "  ✓ fzf already installed"
-        fi
-
-        # Windows - download direnv directly
-        if ! command -v direnv &> /dev/null; then
-            echo "  Installing direnv..."
-            local DIRENV_VERSION="2.35.0"
-            local DIRENV_URL="https://github.com/direnv/direnv/releases/download/v${DIRENV_VERSION}/direnv.windows-amd64.exe"
-
-            if curl -fsSL "$DIRENV_URL" -o "$DOTFILES_DIR/scripts/direnv.exe"; then
-                echo "  ✓ direnv installed to dotfiles/scripts/"
-            else
-                echo "  ✗ Failed to download direnv"
-            fi
-        else
-            echo "  ✓ direnv already installed"
-        fi
-    fi
-}
-
-# -----------------------------------------------------------------------------
-# Install dev tools
-# -----------------------------------------------------------------------------
-install_dev_tools() {
-    echo ""
-    echo "[3/4] Installing dev tools..."
-
-    if [[ "$OS" == "macos" ]]; then
-        # Node.js
-        if ! command -v node &> /dev/null; then
-            echo "  Installing Node.js..."
-            brew install node
-        else
-            echo "  ✓ Node.js $(node --version)"
-        fi
-
-        # Go
-        if ! command -v go &> /dev/null; then
-            echo "  Installing Go..."
-            brew install go
-        else
-            echo "  ✓ $(go version)"
-        fi
-
-    elif [[ "$OS" == "windows" ]]; then
-        # On Windows, check and give instructions (needs admin for choco)
         if command -v node &> /dev/null; then
-            echo "  ✓ Node.js $(node --version)"
-        else
-            echo "  ✗ Node.js not found"
-            echo "    Install (admin PowerShell): choco install nodejs-lts -y"
+            command -v tsc &> /dev/null || npm install -g typescript
+            command -v claude &> /dev/null || npm install -g @anthropic-ai/claude-code
+            echo "  ✓ TypeScript, Claude Code"
         fi
 
-        if command -v go &> /dev/null; then
-            echo "  ✓ $(go version)"
-        else
-            echo "  ✗ Go not found"
-            echo "    Install (admin PowerShell): choco install golang -y"
+    elif [[ "$OS" == "windows" ]]; then
+        mkdir -p "$DOTFILES_DIR/scripts"
+
+        # Git Bash/MSYS2 needs Linux binary, regular Windows needs Windows binary
+        local needs_install=false
+        local needs_replace=false
+        
+        if ! command -v fzf &> /dev/null; then
+            needs_install=true
+        elif [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]]; then
+            # Check if existing fzf is Windows binary (won't work in Git Bash)
+            if [[ -f "$DOTFILES_DIR/scripts/fzf.exe" ]] || ! "$DOTFILES_DIR/scripts/fzf" --version &>/dev/null; then
+                needs_replace=true
+            fi
         fi
-    fi
-
-    # TypeScript (cross-platform via npm)
-    if command -v node &> /dev/null; then
-        if ! command -v tsc &> /dev/null; then
-            echo "  Installing TypeScript..."
-            npm install -g typescript
-        else
-            echo "  ✓ TypeScript $(tsc --version)"
+        
+        if [[ "$needs_install" == true ]] || [[ "$needs_replace" == true ]]; then
+            echo "  Installing fzf..."
+            # Remove old binary if exists
+            rm -f "$DOTFILES_DIR/scripts/fzf" "$DOTFILES_DIR/scripts/fzf.exe"
+            
+            if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]]; then
+                # Git Bash/MSYS2 - use Linux binary
+                curl -fsSL "https://github.com/junegunn/fzf/releases/download/v0.59.0/fzf-0.59.0-linux_amd64.tar.gz" -o /tmp/fzf.tar.gz
+                tar -xzf /tmp/fzf.tar.gz -C "$DOTFILES_DIR/scripts/" fzf && rm /tmp/fzf.tar.gz
+                chmod +x "$DOTFILES_DIR/scripts/fzf"
+            else
+                # Regular Windows - use Windows binary
+                curl -fsSL "https://github.com/junegunn/fzf/releases/download/v0.59.0/fzf-0.59.0-windows_amd64.zip" -o /tmp/fzf.zip
+                unzip -o /tmp/fzf.zip -d "$DOTFILES_DIR/scripts/" && rm /tmp/fzf.zip
+            fi
         fi
-    fi
+        echo "  ✓ fzf"
 
-    # Claude Code (cross-platform via npm)
-    if command -v node &> /dev/null; then
-        if ! command -v claude &> /dev/null; then
-            echo "  Installing Claude Code..."
-            npm install -g @anthropic-ai/claude-code
-        else
-            echo "  ✓ Claude Code installed"
+        if ! command -v direnv &> /dev/null; then
+            echo "  Installing direnv..."
+            curl -fsSL "https://github.com/direnv/direnv/releases/download/v2.35.0/direnv.windows-amd64.exe" -o "$DOTFILES_DIR/scripts/direnv.exe"
         fi
-    fi
+        echo "  ✓ direnv"
 
-    # Git check
-    if command -v git &> /dev/null; then
-        echo "  ✓ Git $(git --version | cut -d' ' -f3)"
-    else
-        echo "  ✗ Git not found - please install manually"
-    fi
-
-    # Docker check (optional)
-    if command -v docker &> /dev/null; then
-        echo "  ✓ Docker found"
-    else
-        echo "  ✗ Docker not found (optional)"
+        command -v node &> /dev/null && echo "  ✓ Node.js $(node --version)" || echo "  ✗ Node.js (install: choco install nodejs-lts)"
+        command -v go &> /dev/null && echo "  ✓ $(go version)" || echo "  ✗ Go (install: choco install golang)"
     fi
 }
 
-# -----------------------------------------------------------------------------
-# Setup scripts
-# -----------------------------------------------------------------------------
 setup_scripts() {
     echo ""
-    echo "[4/4] Setting up scripts..."
-
+    echo "[3/5] Setting up scripts..."
     chmod +x "$DOTFILES_DIR/scripts/"* 2>/dev/null || true
     echo "  ✓ Scripts made executable"
 }
 
-# -----------------------------------------------------------------------------
-# Main
-# -----------------------------------------------------------------------------
+setup_macos_zsh() {
+    echo ""
+    echo "[4/5] Setting up Oh My Zsh (macOS)..."
+
+    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    fi
+    echo "  ✓ Oh My Zsh"
+
+    local ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
+    [[ -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]] || git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+    [[ -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]] || git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+    [[ -d "$ZSH_CUSTOM/plugins/zsh-completions" ]] || git clone https://github.com/zsh-users/zsh-completions "$ZSH_CUSTOM/plugins/zsh-completions"
+    echo "  ✓ Zsh plugins"
+}
+
+setup_windows_wsl() {
+    echo ""
+    echo "[4/5] Setting up WSL with native dev tools..."
+
+    if ! command -v wsl.exe &> /dev/null && ! command -v wsl &> /dev/null; then
+        echo "  ✗ WSL not available. Run in PowerShell (admin): wsl --install"
+        return 1
+    fi
+
+    local wsl_list
+    wsl_list=$(wsl -l -q 2>/dev/null | tr -d '\0' | tr -d ' ')
+    if ! echo "$wsl_list" | grep -qi "ubuntu"; then
+        echo "  Installing Ubuntu on WSL..."
+        wsl --install -d Ubuntu --no-launch
+        echo ""
+        echo "  =================================================="
+        echo "  Ubuntu installed! Initialize it first:"
+        echo "  1. Run in PowerShell: wsl -d Ubuntu"
+        echo "  2. Create username and password"
+        echo "  3. Type exit and run ./setup.sh again"
+        echo "  =================================================="
+        return 0
+    fi
+
+    echo "  ✓ Ubuntu WSL found"
+    echo ""
+    echo "  Installing all native tools in WSL..."
+    echo "  (This may take a few minutes on first run)"
+    echo ""
+
+    # Run WSL setup script (use MSYS_NO_PATHCONV to prevent path mangling)
+    MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash /mnt/c/Users/$USERNAME/dotfiles/scripts/wsl-setup.sh
+}
+
+setup_hyper_windows() {
+    echo ""
+    echo "[5/5] Setting up Hyper Terminal..."
+
+    local hyper_config="$APPDATA/Hyper/.hyper.js"
+
+    if [[ ! -d "$APPDATA/Hyper" ]]; then
+        echo "  ✗ Hyper not installed. Download from: https://hyper.is"
+        return 0
+    fi
+
+    if [[ -f "$hyper_config" ]]; then
+        cp "$hyper_config" "$hyper_config.backup"
+        # JavaScript needs double backslashes in source: C:\\Windows\\System32\\wsl.exe
+        # In double-quoted bash string: \\\\ becomes \\ to sed, which outputs \ (single backslash)
+        # To output \\ (double backslash) in file, we need \\\\ in sed, which requires \\\\\\\\ in bash string
+        sed -i "s|shell: '.*'|shell: 'C:\\\\\\\\Windows\\\\\\\\System32\\\\\\\\wsl.exe'|" "$hyper_config"
+        sed -i "s|shellArgs: \[.*\]|shellArgs: ['-d', 'Ubuntu']|" "$hyper_config"
+        if ! grep -q "hyper-material-theme" "$hyper_config"; then
+            sed -i "s|plugins: \[\]|plugins: ['hyper-material-theme', 'hyper-search', 'hyper-pane']|" "$hyper_config"
+        fi
+        echo "  ✓ Hyper configured for WSL + Zsh"
+    fi
+}
+
 main() {
     create_symlinks
-    install_tools
-    install_dev_tools
+    install_host_tools
     setup_scripts
+
+    if [[ "$OS" == "macos" ]]; then
+        setup_macos_zsh
+        echo ""
+        echo "[5/5] Skipped (macOS)"
+    elif [[ "$OS" == "windows" ]]; then
+        setup_windows_wsl
+        setup_hyper_windows
+    fi
 
     echo ""
     echo "=================================================="
@@ -240,19 +224,18 @@ main() {
     echo ""
     echo "Next steps:"
     if [[ "$OS" == "macos" ]]; then
-        echo "  1. Restart terminal or run: source ~/.zshrc"
-    else
-        echo "  1. Restart terminal or run: source ~/.bashrc"
+        echo "  1. Restart terminal or: source ~/.zshrc"
+        echo "  2. Test: fp, gs, claude --version"
+    elif [[ "$OS" == "windows" ]]; then
+        echo "  1. Restart Hyper terminal"
+        echo "  2. You will be in WSL Ubuntu with Zsh"
+        echo "  3. All tools are native: node, npm, go, tsc, claude, docker"
+        echo "  4. Use fp to fuzzy-find projects"
+        echo "  5. Use proj or work to jump to directories"
     fi
-    echo "  2. Test with: gs (git status alias)"
-    echo "  3. Use 'fp' to fuzzy-find and switch projects"
-    echo "  4. Use 'cht <topic>' for quick reference"
     echo ""
 
-    if [ -d "$BACKUP_DIR" ]; then
-        echo "Old configs backed up to: $BACKUP_DIR"
-        echo ""
-    fi
+    [[ -d "$BACKUP_DIR" ]] && echo "Old configs backed up to: $BACKUP_DIR"
 }
 
 main "$@"

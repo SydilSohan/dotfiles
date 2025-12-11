@@ -1,0 +1,195 @@
+#!/bin/bash
+# =============================================================================
+# gh-auth - GitHub CLI authentication using encrypted token
+# =============================================================================
+# Uses the vault system to securely store and use GitHub personal access tokens
+#
+# Usage:
+#   gh-auth              # Authenticate using stored token
+#   gh-auth setup        # Interactive setup to create and encrypt token
+#   gh-auth status       # Check authentication status
+#   gh-auth logout       # Log out from GitHub CLI
+# =============================================================================
+
+set -e
+
+DOTFILES_DIR="$HOME/dotfiles"
+SECRETS_DIR="$DOTFILES_DIR/secrets/github"
+TOKEN_FILE="$SECRETS_DIR/token"
+VAULT_SCRIPT="$DOTFILES_DIR/scripts/vault"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+print_success() { echo -e "${GREEN}✓${NC} $1"; }
+print_error() { echo -e "${RED}✗${NC} $1"; }
+print_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
+
+# Check if gh is installed
+check_gh() {
+    if ! command -v gh &> /dev/null; then
+        print_error "GitHub CLI (gh) is not installed"
+        echo "Run ./setup.sh to install it"
+        exit 1
+    fi
+}
+
+# Check if token file is encrypted
+is_encrypted() {
+    head -1 "$1" 2>/dev/null | grep -q "^VAULT_ENCRYPTED" && return 0 || return 1
+}
+
+# Get decrypted token
+get_token() {
+    if [[ ! -f "$TOKEN_FILE" ]]; then
+        print_error "Token file not found: $TOKEN_FILE"
+        echo "Run 'gh-auth setup' to create one"
+        exit 1
+    fi
+
+    if is_encrypted "$TOKEN_FILE"; then
+        "$VAULT_SCRIPT" view "$TOKEN_FILE" 2>/dev/null
+    else
+        cat "$TOKEN_FILE"
+    fi
+}
+
+# Setup new token
+do_setup() {
+    echo "=================================================="
+    echo "  GitHub CLI Authentication Setup"
+    echo "=================================================="
+    echo ""
+    echo "This will create and encrypt a GitHub personal access token."
+    echo ""
+    echo "To create a token:"
+    echo "  1. Go to: https://github.com/settings/tokens?type=beta"
+    echo "  2. Click 'Generate new token'"
+    echo "  3. Give it a name (e.g., 'dotfiles-cli')"
+    echo "  4. Set expiration (recommend: 90 days or 1 year)"
+    echo "  5. Select repository access (All repositories or specific ones)"
+    echo "  6. Under 'Repository permissions', enable:"
+    echo "     - Contents: Read and write"
+    echo "     - Metadata: Read-only"
+    echo "     - Pull requests: Read and write"
+    echo "     - Issues: Read and write (optional)"
+    echo "  7. Click 'Generate token' and copy it"
+    echo ""
+
+    read -s -p "Paste your GitHub token: " token
+    echo ""
+
+    if [[ -z "$token" ]]; then
+        print_error "No token provided"
+        exit 1
+    fi
+
+    # Validate token format (starts with ghp_ or github_pat_)
+    if [[ ! "$token" =~ ^(ghp_|github_pat_) ]]; then
+        print_warn "Token doesn't look like a GitHub token (expected ghp_ or github_pat_ prefix)"
+        read -p "Continue anyway? [y/N] " confirm
+        [[ "$confirm" != "y" && "$confirm" != "Y" ]] && exit 1
+    fi
+
+    # Create secrets directory if needed
+    mkdir -p "$SECRETS_DIR"
+
+    # Save token
+    echo "$token" > "$TOKEN_FILE"
+    chmod 600 "$TOKEN_FILE"
+    print_success "Token saved to $TOKEN_FILE"
+
+    # Encrypt token
+    if [[ -f "$HOME/.vault_password" ]]; then
+        "$VAULT_SCRIPT" encrypt "$TOKEN_FILE"
+        print_success "Token encrypted"
+    else
+        print_warn "Vault password not set - token stored unencrypted!"
+        echo "Run 'vault set-password' then 'vault encrypt $TOKEN_FILE'"
+    fi
+
+    echo ""
+    echo "Now run 'gh-auth' to authenticate the GitHub CLI"
+}
+
+# Authenticate with stored token
+do_auth() {
+    check_gh
+
+    echo "Authenticating GitHub CLI..."
+
+    local token=$(get_token)
+
+    if [[ -z "$token" ]]; then
+        print_error "Failed to retrieve token"
+        exit 1
+    fi
+
+    # Authenticate gh CLI with the token
+    echo "$token" | gh auth login --with-token
+
+    if [[ $? -eq 0 ]]; then
+        print_success "GitHub CLI authenticated successfully"
+        gh auth status
+    else
+        print_error "Authentication failed"
+        exit 1
+    fi
+}
+
+# Check status
+do_status() {
+    check_gh
+
+    echo "GitHub CLI Authentication Status:"
+    echo ""
+    gh auth status 2>&1 || true
+    echo ""
+
+    if [[ -f "$TOKEN_FILE" ]]; then
+        if is_encrypted "$TOKEN_FILE"; then
+            print_success "Token file: $TOKEN_FILE (encrypted)"
+        else
+            print_warn "Token file: $TOKEN_FILE (NOT encrypted!)"
+        fi
+    else
+        print_warn "No token file found at $TOKEN_FILE"
+    fi
+}
+
+# Logout
+do_logout() {
+    check_gh
+    gh auth logout
+    print_success "Logged out from GitHub CLI"
+}
+
+# Main
+case "${1:-auth}" in
+    setup)
+        do_setup
+        ;;
+    auth|"")
+        do_auth
+        ;;
+    status)
+        do_status
+        ;;
+    logout)
+        do_logout
+        ;;
+    *)
+        echo "gh-auth - GitHub CLI authentication using encrypted token"
+        echo ""
+        echo "Usage:"
+        echo "  gh-auth              Authenticate using stored token"
+        echo "  gh-auth setup        Interactive setup to create and encrypt token"
+        echo "  gh-auth status       Check authentication status"
+        echo "  gh-auth logout       Log out from GitHub CLI"
+        echo ""
+        echo "Token stored at: $TOKEN_FILE"
+        ;;
+esac

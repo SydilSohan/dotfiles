@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(bash:*)",
+      "Bash(git -C C:/Users/s26-2/dotfiles status)",
+      "Bash(git -C C:/Users/s26-2/dotfiles diff)",
+      "Bash(git -C C:/Users/s26-2/dotfiles log --oneline -5)",
+      "Bash(git -C C:/Users/s26-2/dotfiles add .bashrc)",
+      "Bash(git -C C:/Users/s26-2/dotfiles commit -m \"$(cat <<''EOF''\nRemove startup message from .bashrc\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git -C C:/Users/s26-2/dotfiles push)",
+      "Bash(MSYS_NO_PATHCONV=1 wsl:*)",
+      "Bash(./setup.sh)",
+      "Bash(git -C C:/Users/s26-2/dotfiles diff .zshrc.wsl)",
+      "Bash(chmod:*)",
+      "Bash(git -C /mnt/c/Users/s26-2/dotfiles status)"
+    ]
+  }
+}

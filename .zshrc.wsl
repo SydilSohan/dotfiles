@@ -1,0 +1,126 @@
+# =============================================================================
+# DOTFILES .zshrc.wsl - WSL Dev Environment (Native Tools)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Oh My Zsh
+# -----------------------------------------------------------------------------
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting zsh-completions docker)
+source $ZSH/oh-my-zsh.sh
+
+# -----------------------------------------------------------------------------
+# Environment
+# -----------------------------------------------------------------------------
+export EDITOR="code"
+export VISUAL="code"
+export GOPATH="$HOME/go"
+export PATH="$PATH:$GOPATH/bin"
+
+# Windows user for accessing Windows files
+WIN_USER="s26-2"
+WIN_HOME="/mnt/c/Users/$WIN_USER"
+
+# Add dotfiles scripts to PATH (vault, gh-auth, etc.)
+export PATH="$PATH:$WIN_HOME/dotfiles/scripts"
+
+# -----------------------------------------------------------------------------
+# Direnv (auto-load .envrc files)
+# -----------------------------------------------------------------------------
+eval "$(direnv hook zsh)"
+
+# -----------------------------------------------------------------------------
+# Git Aliases
+# -----------------------------------------------------------------------------
+alias g="git"
+alias gs="git status"
+alias ga="git add"
+alias gaa="git add --all"
+alias gc="git commit"
+alias gcm="git commit -m"
+alias gp="git push"
+alias gpl="git pull"
+alias gco="git checkout"
+alias gcb="git checkout -b"
+alias gb="git branch"
+alias gd="git diff"
+alias gds="git diff --staged"
+alias gl="git log --oneline -20"
+
+# -----------------------------------------------------------------------------
+# Navigation
+# -----------------------------------------------------------------------------
+alias ..="cd .."
+alias ...="cd ../.."
+alias proj="cd $WIN_HOME/projects"
+alias work="cd $WIN_HOME/work"
+alias winhome="cd $WIN_HOME"
+alias dotfiles="cd $WIN_HOME/dotfiles"
+
+# -----------------------------------------------------------------------------
+# Listing
+# -----------------------------------------------------------------------------
+alias ll="ls -la"
+alias la="ls -A"
+alias l="ls -CF"
+
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+alias nr="npm run"
+alias nrd="npm run dev"
+alias nrb="npm run build"
+alias nrt="npm run test"
+alias ni="npm install"
+
+alias gr="go run"
+alias gob="go build"
+alias gt="go test ./..."
+alias gmt="go mod tidy"
+
+alias d="docker"
+alias dc="docker compose"
+alias dps="docker ps"
+
+# -----------------------------------------------------------------------------
+# Project Switcher (fzf)
+# -----------------------------------------------------------------------------
+fp() {
+    local dir
+    dir=$(find $WIN_HOME/projects $WIN_HOME/work -maxdepth 2 -type d -name ".git" 2>/dev/null |
+          sed 's/\/.git$//' |
+          fzf --height 40% --reverse --border)
+    if [[ -n "$dir" ]]; then
+        cd "$dir"
+        echo "→ $dir"
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Useful Functions
+# -----------------------------------------------------------------------------
+mkcd() { mkdir -p "$1" && cd "$1"; }
+
+gacp() {
+    git add --all
+    git commit -m "$1"
+    git push
+}
+
+# -----------------------------------------------------------------------------
+# History
+# -----------------------------------------------------------------------------
+HISTSIZE=10000
+SAVEHIST=20000
+HISTFILE=~/.zsh_history
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt SHARE_HISTORY
+
+# -----------------------------------------------------------------------------
+# Local overrides
+# -----------------------------------------------------------------------------
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+echo "WSL ready! Use 'fp' to switch projects, 'proj' or 'work' for quick nav."
