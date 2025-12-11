@@ -23,6 +23,6 @@ Thumbs.db
 *.bak
 *.backup
 *~
-
+./claude/settings.local.json
 # Note: Encrypted secrets (VAULT_ENCRYPTED) ARE safe to commit
 # Only unencrypted secrets should never be committed
