@@ -102,3 +102,52 @@ The `secrets-restore` script contains hardcoded mappings from dotfiles to projec
 - Windows: Uses `.bashrc` (Git Bash), Chocolatey for packages
 - macOS: Uses `.zshrc`, Homebrew for packages
 - `setup.sh` auto-detects OS and links appropriate config
+
+## Disk Cleanup (Windows)
+
+When running low on disk space, use the PowerShell cleanup script:
+
+```powershell
+# Run as Administrator
+powershell -ExecutionPolicy Bypass -File ~/dotfiles/scripts/disk-cleanup.ps1
+
+# Options:
+#   -All        Run all cleanups without prompting
+#   -DevCaches  Clean dev caches only (npm, pip, nuget, gradle, maven, yarn)
+#   -Browsers   Clean browser caches only (Chrome, Edge, Brave, Firefox)
+#   -Docker     Docker prune and WSL disk compaction only
+#   -System     System temp files only (temp, crash dumps, NVIDIA caches)
+#   -DryRun     Show what would be cleaned without deleting
+```
+
+### What It Cleans
+
+| Category | Items |
+|----------|-------|
+| Dev Caches | npm, pip, NuGet, Gradle, Maven, Yarn |
+| Browsers | Chrome, Edge, Brave, Firefox caches |
+| System | Temp folders, crash dumps, Windows Update cache, thumbnail cache |
+| GPU | NVIDIA DX/GL shader caches, DirectX shader cache |
+| Docker | Prunes unused containers/images/volumes, compacts WSL disk |
+
+### Interactive Prompts
+
+When run without flags, script will also prompt to remove:
+- Android SDK (if installed)
+- Unused WSL distributions
+- Installer files (.exe, .msi, .apk) in Downloads
+
+### Claude Commands for Disk Cleanup
+
+If you prefer Claude to handle cleanup interactively:
+
+```
+# Quick cleanup prompt:
+"Free up disk space on my Windows machine - clean dev caches, browser caches, temp files, and Docker"
+
+# Specific tasks:
+"Run docker system prune and compact the WSL disk"
+"Clean npm cache and browser caches"
+"Check what's using the most space and help me remove it"
+"Remove Android SDK and WSL Ubuntu"
+```
