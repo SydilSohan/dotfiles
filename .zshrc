@@ -225,10 +225,49 @@ if command -v direnv &> /dev/null; then
 fi
 
 # -----------------------------------------------------------------------------
+# Google Cloud SDK
+# -----------------------------------------------------------------------------
+if [[ -d "$(brew --prefix 2>/dev/null)/share/google-cloud-sdk" ]]; then
+    source "$(brew --prefix)/share/google-cloud-sdk/path.zsh.inc"
+    source "$(brew --prefix)/share/google-cloud-sdk/completion.zsh.inc"
+fi
+
+# kubectl completion
+if command -v kubectl &> /dev/null; then
+    source <(kubectl completion zsh)
+fi
+
+# Kubernetes/GCloud aliases
+alias k="kubectl"
+alias kgp="kubectl get pods"
+alias kgs="kubectl get services"
+alias kgd="kubectl get deployments"
+alias kga="kubectl get all"
+alias kaf="kubectl apply -f"
+alias kdf="kubectl delete -f"
+alias kl="kubectl logs"
+alias klf="kubectl logs -f"
+alias kex="kubectl exec -it"
+alias kctx="kubectl config current-context"
+alias kns="kubectl config set-context --current --namespace"
+
+# -----------------------------------------------------------------------------
 # Load local overrides if exists
 # -----------------------------------------------------------------------------
 if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local
 fi
 
-echo "Dotfiles loaded! Use 'fp' to switch projects, 'cht <topic>' for quick reference."
+
+# Android SDK (auto-added by android-setup)
+export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin"
+export PATH="$PATH:$ANDROID_HOME/platform-tools"
+export PATH="$PATH:$ANDROID_HOME/emulator"
+
+# Android aliases
+alias emu="emulator -avd Pixel_7_API_34"
+alias emu-list="emulator -list-avds"
+alias adb-devices="adb devices"
+alias adb-restart="adb kill-server && adb start-server"
