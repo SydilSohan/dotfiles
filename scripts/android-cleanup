@@ -1,0 +1,144 @@
+#!/bin/bash
+# =============================================================================
+# Android Development Environment Cleanup (macOS)
+# =============================================================================
+# Removes: Android SDK, AVDs, command-line tools, environment variables
+# =============================================================================
+
+set -e
+
+ANDROID_SDK_ROOT="/opt/homebrew/share/android-commandlinetools"
+
+echo "=================================================="
+echo "  Android Development Cleanup (macOS)"
+echo "=================================================="
+echo ""
+echo "This will remove:"
+echo "  - Android SDK ($ANDROID_SDK_ROOT)"
+echo "  - All AVDs (~/.android/avd/)"
+echo "  - Android command-line tools (Homebrew)"
+echo "  - Environment variables from .zshrc"
+echo ""
+read -p "Are you sure? (y/N) " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Cancelled."
+    exit 0
+fi
+
+echo ""
+
+# -----------------------------------------------------------------------------
+# Step 1: Kill any running emulator processes
+# -----------------------------------------------------------------------------
+echo "[1/5] Stopping any running emulators..."
+
+pkill -f "qemu-system" 2>/dev/null || true
+pkill -f "emulator" 2>/dev/null || true
+adb kill-server 2>/dev/null || true
+echo "  Done"
+
+# -----------------------------------------------------------------------------
+# Step 2: Remove AVDs
+# -----------------------------------------------------------------------------
+echo ""
+echo "[2/5] Removing AVDs..."
+
+if [[ -d "$HOME/.android/avd" ]]; then
+    rm -rf "$HOME/.android/avd"
+    echo "  Removed ~/.android/avd/"
+else
+    echo "  No AVDs found"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 3: Remove Android SDK
+# -----------------------------------------------------------------------------
+echo ""
+echo "[3/5] Removing Android SDK..."
+
+if [[ -d "$ANDROID_SDK_ROOT" ]]; then
+    rm -rf "$ANDROID_SDK_ROOT"
+    echo "  Removed $ANDROID_SDK_ROOT"
+else
+    echo "  SDK not found at $ANDROID_SDK_ROOT"
+fi
+
+# Also check for alternate location
+if [[ -d "$HOME/Android/sdk" ]]; then
+    rm -rf "$HOME/Android/sdk"
+    echo "  Removed ~/Android/sdk"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 4: Uninstall Homebrew packages
+# -----------------------------------------------------------------------------
+echo ""
+echo "[4/5] Uninstalling Homebrew packages..."
+
+if brew list --cask android-commandlinetools &> /dev/null; then
+    brew uninstall --cask android-commandlinetools
+    echo "  Uninstalled android-commandlinetools"
+else
+    echo "  android-commandlinetools not installed"
+fi
+
+# Optional: remove Android Studio if installed
+if brew list --cask android-studio &> /dev/null; then
+    read -p "  Also remove Android Studio? (y/N) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        brew uninstall --cask android-studio
+        echo "  Uninstalled android-studio"
+    fi
+fi
+
+# -----------------------------------------------------------------------------
+# Step 5: Remove environment variables from .zshrc
+# -----------------------------------------------------------------------------
+echo ""
+echo "[5/5] Cleaning up .zshrc..."
+
+ZSHRC="$HOME/.zshrc"
+MARKER="# Android SDK (auto-added by android-setup)"
+
+if grep -q "$MARKER" "$ZSHRC" 2>/dev/null; then
+    # Create backup
+    cp "$ZSHRC" "$ZSHRC.backup.$(date +%Y%m%d_%H%M%S)"
+
+    # Remove Android block (from marker to next blank line or section)
+    sed -i '' "/$MARKER/,/^$/d" "$ZSHRC"
+
+    # Also remove alias lines if they exist separately
+    sed -i '' '/^alias emu=/d' "$ZSHRC"
+    sed -i '' '/^alias emu-list=/d' "$ZSHRC"
+    sed -i '' '/^alias adb-devices=/d' "$ZSHRC"
+    sed -i '' '/^alias adb-restart=/d' "$ZSHRC"
+    sed -i '' '/^export ANDROID_HOME=/d' "$ZSHRC"
+    sed -i '' '/^export ANDROID_SDK_ROOT=/d' "$ZSHRC"
+
+    echo "  Removed Android configuration from .zshrc"
+    echo "  Backup created: $ZSHRC.backup.*"
+else
+    echo "  No Android configuration found in .zshrc"
+fi
+
+# -----------------------------------------------------------------------------
+# Optional: Clean up Android caches
+# -----------------------------------------------------------------------------
+echo ""
+read -p "Remove Android caches and preferences? (~/.android) (y/N) " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    rm -rf "$HOME/.android"
+    echo "  Removed ~/.android"
+fi
+
+echo ""
+echo "=================================================="
+echo "  Cleanup Complete!"
+echo "=================================================="
+echo ""
+echo "Restart your terminal to apply changes."
+echo ""

@@ -1,0 +1,154 @@
+#!/bin/bash
+# =============================================================================
+# Android Development Environment Setup (macOS)
+# =============================================================================
+# Installs: Android SDK, platform-tools (adb), emulator, AVD
+# All via CLI - no GUI interaction needed
+# =============================================================================
+
+set -e
+
+# Configuration
+ANDROID_SDK_ROOT="/opt/homebrew/share/android-commandlinetools"
+SYSTEM_IMAGE="system-images;android-34;google_apis;arm64-v8a"
+AVD_NAME="Pixel_7_API_34"
+DEVICE_PROFILE="pixel_7"
+
+echo "=================================================="
+echo "  Android Development Setup (macOS)"
+echo "=================================================="
+echo ""
+
+# -----------------------------------------------------------------------------
+# Step 1: Install Android Command Line Tools via Homebrew
+# -----------------------------------------------------------------------------
+echo "[1/6] Installing Android command-line tools..."
+
+if ! command -v brew &> /dev/null; then
+    echo "  ERROR: Homebrew not found. Run setup.sh first."
+    exit 1
+fi
+
+# Install Android command-line tools (includes sdkmanager, avdmanager)
+if ! brew list --cask android-commandlinetools &> /dev/null; then
+    brew install --cask android-commandlinetools
+else
+    echo "  Already installed: android-commandlinetools"
+fi
+
+# Set ANDROID_HOME for this session
+export ANDROID_HOME="$ANDROID_SDK_ROOT"
+export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+export PATH="$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$ANDROID_HOME/emulator:$PATH"
+
+echo "  Done"
+
+# -----------------------------------------------------------------------------
+# Step 2: Accept SDK Licenses
+# -----------------------------------------------------------------------------
+echo ""
+echo "[2/6] Accepting SDK licenses..."
+
+yes | sdkmanager --licenses > /dev/null 2>&1 || true
+echo "  Done"
+
+# -----------------------------------------------------------------------------
+# Step 3: Install SDK Components
+# -----------------------------------------------------------------------------
+echo ""
+echo "[3/6] Installing SDK components..."
+
+sdkmanager --install \
+    "platform-tools" \
+    "emulator" \
+    "platforms;android-34" \
+    "build-tools;34.0.0" \
+    "$SYSTEM_IMAGE"
+
+echo "  Installed:"
+echo "    - platform-tools (adb, fastboot)"
+echo "    - emulator"
+echo "    - Android 34 platform"
+echo "    - Build tools 34.0.0"
+echo "    - System image: $SYSTEM_IMAGE"
+
+# -----------------------------------------------------------------------------
+# Step 4: Create AVD (Android Virtual Device)
+# -----------------------------------------------------------------------------
+echo ""
+echo "[4/6] Creating AVD: $AVD_NAME..."
+
+# Check if AVD already exists
+if avdmanager list avd 2>/dev/null | grep -q "$AVD_NAME"; then
+    echo "  AVD '$AVD_NAME' already exists, skipping creation"
+else
+    echo "no" | avdmanager create avd \
+        --name "$AVD_NAME" \
+        --package "$SYSTEM_IMAGE" \
+        --device "$DEVICE_PROFILE" \
+        --force
+    echo "  Created AVD: $AVD_NAME"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 5: Add Environment Variables to .zshrc
+# -----------------------------------------------------------------------------
+echo ""
+echo "[5/6] Configuring environment variables..."
+
+ZSHRC="$HOME/.zshrc"
+MARKER="# Android SDK (auto-added by android-setup)"
+
+if grep -q "$MARKER" "$ZSHRC" 2>/dev/null; then
+    echo "  Environment variables already configured in .zshrc"
+else
+    cat >> "$ZSHRC" << 'EOF'
+
+# Android SDK (auto-added by android-setup)
+export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin"
+export PATH="$PATH:$ANDROID_HOME/platform-tools"
+export PATH="$PATH:$ANDROID_HOME/emulator"
+
+# Android aliases
+alias emu="emulator -avd Pixel_7_API_34"
+alias emu-list="emulator -list-avds"
+alias adb-devices="adb devices"
+alias adb-restart="adb kill-server && adb start-server"
+EOF
+    echo "  Added to .zshrc"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 6: Verify Installation
+# -----------------------------------------------------------------------------
+echo ""
+echo "[6/6] Verifying installation..."
+
+echo ""
+echo "  SDK Location: $ANDROID_SDK_ROOT"
+echo "  ADB: $(which adb 2>/dev/null || echo 'Not in PATH yet - restart terminal')"
+echo "  Emulator: $(which emulator 2>/dev/null || echo 'Not in PATH yet - restart terminal')"
+echo ""
+echo "  Available AVDs:"
+avdmanager list avd 2>/dev/null | grep "Name:" | sed 's/^/    /'
+
+echo ""
+echo "=================================================="
+echo "  Setup Complete!"
+echo "=================================================="
+echo ""
+echo "Next steps:"
+echo "  1. Restart terminal or: source ~/.zshrc"
+echo "  2. Verify: adb --version"
+echo "  3. Start emulator: emu (or: emulator -avd $AVD_NAME)"
+echo "  4. List devices: adb devices"
+echo ""
+echo "Useful commands:"
+echo "  emu           - Start the default emulator"
+echo "  emu-list      - List available AVDs"
+echo "  adb-devices   - List connected devices"
+echo "  adb-restart   - Restart ADB server"
+echo ""
