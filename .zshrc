@@ -55,6 +55,8 @@ alias work="cd ~/work"
 alias ll="ls -la"
 alias la="ls -A"
 alias l="ls -CF"
+alias cat="bat --paging=never"
+alias catp="bat"  # with paging
 
 # macOS specific
 alias showfiles="defaults write com.apple.finder AppleShowAllFiles YES && killall Finder"
@@ -225,6 +227,13 @@ if command -v direnv &> /dev/null; then
 fi
 
 # -----------------------------------------------------------------------------
+# fzf - fuzzy finder keybindings (Ctrl+R for history, Ctrl+T for files)
+# -----------------------------------------------------------------------------
+if command -v fzf &> /dev/null; then
+    source <(fzf --zsh)
+fi
+
+# -----------------------------------------------------------------------------
 # Google Cloud SDK
 # -----------------------------------------------------------------------------
 if [[ -d "$(brew --prefix 2>/dev/null)/share/google-cloud-sdk" ]]; then
@@ -258,6 +267,14 @@ if [ -f ~/.zshrc.local ]; then
     source ~/.zshrc.local
 fi
 
+# -----------------------------------------------------------------------------
+# Zsh plugins (loaded last)
+# -----------------------------------------------------------------------------
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+[[ -f "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+    source "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
+[[ -f "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+    source "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 
 # Android SDK (auto-added by android-setup)
 export ANDROID_HOME="/opt/homebrew/share/android-commandlinetools"
@@ -271,3 +288,4 @@ alias emu="emulator -avd Pixel_7_API_34"
 alias emu-list="emulator -list-avds"
 alias adb-devices="adb devices"
 alias adb-restart="adb kill-server && adb start-server"
+export PATH="$HOME/.local/bin:$PATH"

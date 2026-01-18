@@ -65,15 +65,32 @@ install_host_tools() {
         command -v fzf &> /dev/null || brew install fzf
         command -v tmux &> /dev/null || brew install tmux
         command -v direnv &> /dev/null || brew install direnv
+        command -v bat &> /dev/null || brew install bat
         command -v node &> /dev/null || brew install node
         command -v go &> /dev/null || brew install go
         command -v gh &> /dev/null || brew install gh
-        echo "  ✓ fzf, tmux, direnv, node, go, gh"
+        echo "  ✓ fzf, tmux, direnv, bat, node, go, gh"
 
         if command -v node &> /dev/null; then
             command -v tsc &> /dev/null || npm install -g typescript
             command -v claude &> /dev/null || npm install -g @anthropic-ai/claude-code
             echo "  ✓ TypeScript, Claude Code"
+        fi
+
+        # Google Cloud SDK (conditional - skip with SKIP_GCLOUD=1)
+        if [[ -z "$SKIP_GCLOUD" ]]; then
+            if ! command -v gcloud &> /dev/null; then
+                echo "  Installing Google Cloud SDK..."
+                brew install google-cloud-sdk
+            fi
+            command -v kubectl &> /dev/null || brew install kubernetes-cli
+            # GKE auth plugin for kubectl
+            if ! gcloud components list 2>/dev/null | grep -q "gke-gcloud-auth-plugin.*Installed"; then
+                brew install gke-gcloud-auth-plugin 2>/dev/null || true
+            fi
+            echo "  ✓ gcloud, kubectl, gke-gcloud-auth-plugin"
+        else
+            echo "  ⊘ Skipping gcloud (SKIP_GCLOUD=1)"
         fi
 
     elif [[ "$OS" == "windows" ]]; then
@@ -135,6 +152,8 @@ setup_macos_zsh() {
     if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
     fi
+    # Restore our .zshrc symlink (Oh My Zsh overwrites it)
+    ln -sf "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
     echo "  ✓ Oh My Zsh"
 
     local ZSH_CUSTOM="$HOME/.oh-my-zsh/custom"
