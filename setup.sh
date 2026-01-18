@@ -161,6 +161,12 @@ setup_macos_zsh() {
     [[ -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]] || git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
     [[ -d "$ZSH_CUSTOM/plugins/zsh-completions" ]] || git clone https://github.com/zsh-users/zsh-completions "$ZSH_CUSTOM/plugins/zsh-completions"
     echo "  ✓ Zsh plugins"
+
+    # Fix Homebrew zsh directory permissions (compaudit warning)
+    if [[ -d "/opt/homebrew/share/zsh" ]]; then
+        chmod go-w /opt/homebrew/share/zsh /opt/homebrew/share/zsh/site-functions 2>/dev/null || true
+        echo "  ✓ Fixed Homebrew zsh permissions"
+    fi
 }
 
 setup_windows_wsl() {

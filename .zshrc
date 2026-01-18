@@ -216,7 +216,7 @@ setopt COMPLETE_IN_WORD     # complete from cursor
 setopt IGNORE_EOF           # don't exit on Ctrl-D
 
 # Better tab completion
-autoload -Uz compinit && compinit
+autoload -Uz compinit && compinit -u
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 
 # -----------------------------------------------------------------------------
