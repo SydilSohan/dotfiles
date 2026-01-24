@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# pgAdmin Setup Script for macOS (Apple Silicon compatible)
+
+set -e
+
+echo "=== pgAdmin Setup ==="
+
+# Check if Homebrew is installed
+if ! command -v brew &> /dev/null; then
+    echo "Homebrew not found. Installing..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+else
+    echo "Homebrew found."
+fi
+
+# Check if pgAdmin is already installed
+if brew list --cask pgadmin4 &> /dev/null; then
+    echo "pgAdmin4 is already installed."
+    echo "Checking for updates..."
+    brew upgrade --cask pgadmin4 || echo "Already up to date."
+else
+    echo "Installing pgAdmin4..."
+    brew install --cask pgadmin4
+fi
+
+echo ""
+echo "=== Installation Complete ==="
+echo "You can launch pgAdmin from Applications or run: open -a pgAdmin\ 4"
+echo ""
+echo "First-time setup:"
+echo "  1. Open pgAdmin from Applications"
+echo "  2. Set a master password when prompted"
+echo "  3. Right-click 'Servers' > 'Register' > 'Server' to add a connection"
